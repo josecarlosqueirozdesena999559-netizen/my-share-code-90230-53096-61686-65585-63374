@@ -14,16 +14,119 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      file_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          shared_file_id: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          shared_file_id: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          shared_file_id?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_permissions_shared_file_id_fkey"
+            columns: ["shared_file_id"]
+            isOneToOne: false
+            referencedRelation: "shared_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      shared_files: {
+        Row: {
+          code: string
+          created_at: string
+          expire_at: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          user_id: string
+          visibility: Database["public"]["Enums"]["file_visibility"]
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expire_at: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          user_id: string
+          visibility?: Database["public"]["Enums"]["file_visibility"]
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expire_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          user_id?: string
+          visibility?: Database["public"]["Enums"]["file_visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_files_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_share_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      user_has_file_permission: {
+        Args: { file_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      file_visibility: "public" | "private"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +253,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      file_visibility: ["public", "private"],
+    },
   },
 } as const
