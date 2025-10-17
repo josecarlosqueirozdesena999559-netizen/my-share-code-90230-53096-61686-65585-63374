@@ -14,35 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      file_permissions: {
-        Row: {
-          created_at: string
-          id: string
-          shared_file_id: string
-          username: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          shared_file_id: string
-          username: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          shared_file_id?: string
-          username?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "file_permissions_shared_file_id_fkey"
-            columns: ["shared_file_id"]
-            isOneToOne: false
-            referencedRelation: "shared_files"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -75,7 +46,7 @@ export type Database = {
           file_type: string
           id: string
           user_id: string
-          visibility: Database["public"]["Enums"]["file_visibility"]
+          visibility: string
         }
         Insert: {
           code: string
@@ -87,7 +58,7 @@ export type Database = {
           file_type: string
           id?: string
           user_id: string
-          visibility?: Database["public"]["Enums"]["file_visibility"]
+          visibility?: string
         }
         Update: {
           code?: string
@@ -99,7 +70,7 @@ export type Database = {
           file_type?: string
           id?: string
           user_id?: string
-          visibility?: Database["public"]["Enums"]["file_visibility"]
+          visibility?: string
         }
         Relationships: [
           {
@@ -120,13 +91,9 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      user_has_file_permission: {
-        Args: { file_id: string }
-        Returns: boolean
-      }
     }
     Enums: {
-      file_visibility: "public" | "private"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -253,8 +220,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      file_visibility: ["public", "private"],
-    },
+    Enums: {},
   },
 } as const

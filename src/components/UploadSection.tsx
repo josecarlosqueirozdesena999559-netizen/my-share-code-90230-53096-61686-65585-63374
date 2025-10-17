@@ -4,10 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload, Copy, Check, Sparkles } from "lucide-react";
-import UserAutocomplete from "@/components/UserAutocomplete";
 import SecurityWarnings from "@/components/SecurityWarnings";
 
 interface UploadSectionProps {
@@ -16,8 +14,6 @@ interface UploadSectionProps {
 
 const UploadSection = ({ userId }: UploadSectionProps) => {
   const [file, setFile] = useState<File | null>(null);
-  const [visibility, setVisibility] = useState<"public" | "private">("public");
-  const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [generatedCode, setGeneratedCode] = useState("");
   const [copied, setCopied] = useState(false);
@@ -77,15 +73,6 @@ const UploadSection = ({ userId }: UploadSectionProps) => {
       return;
     }
 
-    if (visibility === "private" && selectedUsers.length === 0) {
-      toast({
-        variant: "destructive",
-        title: "Adicione usuários permitidos",
-        description: "Para arquivos privados, selecione ao menos um usuário.",
-      });
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -101,7 +88,7 @@ const UploadSection = ({ userId }: UploadSectionProps) => {
       const expireAt = new Date();
       expireAt.setHours(expireAt.getHours() + 24);
 
-      const { data: fileData, error: dbError } = await supabase
+      const { error: dbError } = await supabase
         .from("shared_files")
         .insert({
           code,
@@ -110,26 +97,11 @@ const UploadSection = ({ userId }: UploadSectionProps) => {
           file_path: fileName,
           file_type: file.type,
           file_size: file.size,
-          visibility,
+          visibility: 'public',
           expire_at: expireAt.toISOString(),
-        })
-        .select()
-        .single();
+        });
 
       if (dbError) throw dbError;
-
-      if (visibility === "private" && selectedUsers.length > 0) {
-        const permissions = selectedUsers.map((user) => ({
-          shared_file_id: fileData.id,
-          username: user.username,
-        }));
-
-        const { error: permError } = await supabase
-          .from("file_permissions")
-          .insert(permissions);
-
-        if (permError) throw permError;
-      }
 
       setGeneratedCode(code);
       toast({
@@ -138,8 +110,6 @@ const UploadSection = ({ userId }: UploadSectionProps) => {
       });
 
       setFile(null);
-      setSelectedUsers([]);
-      setVisibility("public");
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -168,7 +138,7 @@ const UploadSection = ({ userId }: UploadSectionProps) => {
             <CardTitle>Enviar Arquivo</CardTitle>
           </div>
           <CardDescription>
-            Escolha um arquivo e defina as permissões de acesso
+            Todos os arquivos são públicos e podem ser baixados por qualquer pessoa com o código
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -200,41 +170,6 @@ const UploadSection = ({ userId }: UploadSectionProps) => {
               </div>
             </div>
           </div>
-
-        <div className="space-y-3">
-          <Label>Visibilidade</Label>
-          <RadioGroup value={visibility} onValueChange={(v: any) => setVisibility(v)}>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="public" id="public" />
-              <Label htmlFor="public" className="cursor-pointer">
-                Público (qualquer um com o código pode baixar)
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="private" id="private" />
-              <Label htmlFor="private" className="cursor-pointer">
-                Privado (apenas usuários específicos)
-              </Label>
-            </div>
-          </RadioGroup>
-        </div>
-
-        {visibility === "private" && (
-          <div className="space-y-2">
-            <Label htmlFor="users" className="text-base font-semibold">Usuários Permitidos</Label>
-            <UserAutocomplete
-              selectedUsers={selectedUsers}
-              onUserAdd={(user) => setSelectedUsers([...selectedUsers, user])}
-              onUserRemove={(userId) =>
-                setSelectedUsers(selectedUsers.filter((u) => u.id !== userId))
-              }
-              currentUserId={userId}
-            />
-            <p className="text-xs text-muted-foreground">
-              Digite o nome do usuário para buscar e adicionar múltiplos usuários
-            </p>
-          </div>
-        )}
 
         <Button onClick={handleUpload} disabled={loading} className="w-full relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 opacity-0 group-hover:opacity-100 transition-opacity" />
