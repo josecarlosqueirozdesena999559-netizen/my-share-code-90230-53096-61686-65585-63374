@@ -49,12 +49,21 @@ const Auth = () => {
 
   useEffect(() => {
     if (!isLogin && username.length >= 3) {
+      // Valida caracteres permitidos
+      if (!/^[a-zA-Z0-9_.-]+$/.test(username)) {
+        setUsernameAvailable(false);
+        setUsernameSuggestions([]);
+        return;
+      }
+
       const timer = setTimeout(async () => {
         setCheckingUsername(true);
+        
+        // Verifica username case-insensitive
         const { data } = await supabase
           .from("profiles")
           .select("username")
-          .eq("username", username)
+          .ilike("username", username)
           .maybeSingle();
         
         const isAvailable = !data;
@@ -87,13 +96,39 @@ const Auth = () => {
           password,
         });
 
-        if (error) throw error;
+        if (error) {
+          if (error.message.includes("Invalid login credentials")) {
+            throw new Error("Email ou senha incorretos");
+          }
+          throw error;
+        }
 
         toast({
           title: "Login realizado!",
           description: "Bem-vindo de volta.",
         });
       } else {
+        // Validação de username
+        if (!username || username.length < 3) {
+          toast({
+            variant: "destructive",
+            title: "Username inválido",
+            description: "O username deve ter pelo menos 3 caracteres.",
+          });
+          setLoading(false);
+          return;
+        }
+
+        if (!/^[a-zA-Z0-9_.-]+$/.test(username)) {
+          toast({
+            variant: "destructive",
+            title: "Username inválido",
+            description: "Use apenas letras, números, pontos, hífens e underscores.",
+          });
+          setLoading(false);
+          return;
+        }
+
         if (!usernameAvailable) {
           toast({
             variant: "destructive",
@@ -110,12 +145,17 @@ const Auth = () => {
           options: {
             emailRedirectTo: `${window.location.origin}/`,
             data: {
-              username,
+              username: username.toLowerCase().trim(),
             },
           },
         });
 
-        if (error) throw error;
+        if (error) {
+          if (error.message.includes("already registered")) {
+            throw new Error("Este email já está cadastrado");
+          }
+          throw error;
+        }
 
         toast({
           title: "Conta criada!",
@@ -163,16 +203,19 @@ const Auth = () => {
           <CardContent>
             <form onSubmit={handleAuth} className="space-y-4">
               {!isLogin && (
-                <div className="space-y-2">
+                  <div className="space-y-2">
                   <Label htmlFor="username">Username</Label>
                   <div className="relative">
                     <Input
                       id="username"
                       type="text"
                       value={username}
-                      onChange={(e) => setUsername(e.target.value)}
+                      onChange={(e) => setUsername(e.target.value.toLowerCase())}
                       required
                       minLength={3}
+                      maxLength={30}
+                      pattern="[a-zA-Z0-9_.-]+"
+                      placeholder="ex: joao_silva"
                       className="pr-10"
                     />
                     {checkingUsername && (
@@ -185,26 +228,35 @@ const Auth = () => {
                       <span className="absolute right-3 top-3 text-destructive">✗</span>
                     )}
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Use apenas letras, números, pontos, hífens e underscores (3-30 caracteres)
+                  </p>
                   {usernameAvailable === false && (
                     <div className="space-y-2">
-                      <p className="text-sm text-destructive font-medium">Username já existe</p>
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">Sugestões disponíveis:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {usernameSuggestions.map((suggestion) => (
-                            <Button
-                              key={suggestion}
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setUsername(suggestion)}
-                              className="h-7 text-xs bg-accent/10 hover:bg-accent/20 border-accent/30"
-                            >
-                              {suggestion}
-                            </Button>
-                          ))}
+                      <p className="text-sm text-destructive font-medium">
+                        {!/^[a-zA-Z0-9_.-]+$/.test(username) 
+                          ? "Username contém caracteres inválidos" 
+                          : "Username já existe"}
+                      </p>
+                      {/^[a-zA-Z0-9_.-]+$/.test(username) && usernameSuggestions.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Sugestões disponíveis:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {usernameSuggestions.map((suggestion) => (
+                              <Button
+                                key={suggestion}
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setUsername(suggestion)}
+                                className="h-7 text-xs bg-accent/10 hover:bg-accent/20 border-accent/30"
+                              >
+                                {suggestion}
+                              </Button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   )}
                 </div>

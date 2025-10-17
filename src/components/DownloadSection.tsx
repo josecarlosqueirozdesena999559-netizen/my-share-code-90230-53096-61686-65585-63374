@@ -77,19 +77,55 @@ const DownloadSection = ({ username }: DownloadSectionProps) => {
 
   const handleDownload = async (file: any) => {
     try {
-      console.log('Tentando baixar arquivo:', {
+      console.log('=== INICIANDO DOWNLOAD ===');
+      console.log('Arquivo:', {
         file_path: file.file_path,
         visibility: file.visibility,
-        file_id: file.id
+        file_id: file.id,
+        file_name: file.file_name
       });
+
+      // Verifica se o usuário está autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Usuário autenticado:', user?.id);
+
+      // Para arquivos privados, verifica se tem permissão
+      if (file.visibility === 'private') {
+        console.log('Arquivo privado - verificando permissões...');
+        
+        const { data: permissions, error: permError } = await supabase
+          .from('file_permissions')
+          .select('username')
+          .eq('shared_file_id', file.id);
+        
+        console.log('Permissões encontradas:', permissions, 'Erro:', permError);
+
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('id', user.id)
+            .single();
+          
+          console.log('Username do usuário:', profile?.username);
+          console.log('Usernames permitidos:', permissions?.map(p => p.username));
+        }
+      }
 
       const { data, error } = await supabase.storage
         .from("shared-files")
         .download(file.file_path);
 
-      console.log('Resultado do download:', { data, error });
+      console.log('Resultado do download:', { 
+        sucesso: !!data, 
+        erro: error?.message,
+        detalhes: error
+      });
 
-      if (error) throw error;
+      if (error) {
+        console.error('ERRO NO DOWNLOAD:', error);
+        throw error;
+      }
 
       const url = URL.createObjectURL(data);
       const a = document.createElement("a");
@@ -100,15 +136,18 @@ const DownloadSection = ({ username }: DownloadSectionProps) => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
+      console.log('Download concluído com sucesso!');
+
       toast({
         title: "Download iniciado!",
         description: file.file_name,
       });
     } catch (error: any) {
+      console.error('ERRO CAPTURADO:', error);
       toast({
         variant: "destructive",
         title: "Erro ao baixar arquivo",
-        description: error.message,
+        description: error.message || "Verifique suas permissões e tente novamente",
       });
     }
   };
