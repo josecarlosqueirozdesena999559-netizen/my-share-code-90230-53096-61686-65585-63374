@@ -138,7 +138,7 @@ const UploadSection = ({ userId }: UploadSectionProps) => {
             <CardTitle>Enviar Arquivo</CardTitle>
           </div>
           <CardDescription>
-            Todos os arquivos são públicos e podem ser baixados por qualquer pessoa com o código
+            Compartilhe arquivos publicamente - qualquer pessoa com o código poderá baixar
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
